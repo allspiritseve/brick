@@ -1,0 +1,17 @@
+{
+  "author": "Cory Kaufman-Schofield <cory@corykaufman.com>",
+  "dependencies": {
+    "abend": "0.0.3",
+    "arguable": "0.0.40",
+    "cadence": "0.4.3",
+    "proof": "0.0.51",
+    "stack-trace": "0.0.9"
+  },
+  "description": "Brick SQL Builder",
+  "engines": {
+    "node": "5.2.0"
+  },
+  "name": "brick",
+  "private": true,
+  "version": "0.0.1"
+}
