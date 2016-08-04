@@ -107,6 +107,13 @@ Brick.fn.and = function(key, value) {
   return new Brick([key, 'AND', value])
 }
 
+Brick.fn.namespace = function() {
+  var parts = slice.call(arguments)
+  return parts.filter(function(part) {
+    return !!part
+  }).join('.')
+}
+
 Brick.log = function(brick) {
   console.log('Brick', JSON.stringify({ sql: brick.sql, params: brick.params }, null, '  '))
 }
@@ -115,8 +122,18 @@ Brick.prototype.log = function() {
   Brick.log(this)
 }
 
-Brick.Namespace = function(namespace) {
-  Object.defineProperty(this, 'namespace', { value: namespace })
+Brick.namespace = function(namespace, value) {
+  var fn = function(value) { return Brick.fn.namespace(namespace, value) }
+  if (!value) { return fn }
+  if (typeof value === 'object') {
+    if (Array.isArray(value)) { return value.map(fn) }
+    return Object.keys(value).reduce(function(memo, key) {
+      memo[fn(key)] = value[key]
+      return memo
+    }, {})
+  } else {
+   return fn(value)
+  }
 }
 
 var sql = {}

@@ -47,8 +47,7 @@ proof(6, cadence(function(async, assert) {
 
   }, function() {
 
-    var table = new Brick.Namespace('events')
-    table.id = '3'
+    var table = Brick.namespace('events', { id: 3 })
     var where = Brick.where(table)
     assert.brick(where, 'events.id = ?', 3)
 
