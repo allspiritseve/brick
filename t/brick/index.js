@@ -53,8 +53,14 @@ proof(7, cadence(function(async, assert) {
 
   }, function() {
 
-  var query = new Brick(['id = ? AND', new Brick('color = ?', 'Blue')], '3')
-  assert.deepEqual(query.build(), ['id = ? AND color = ?', 'Blue', '3'])
+    var where = new Brick()
+    var query = new Brick('SELECT * FROM events WHERE ?', where)
+    where.text.push('id = ?')
+    where.params.push(1)
+    assert.deepEqual(query.build(), ['SELECT * FROM events WHERE ?', []])
+    where.text.push('AND', 'color = ?')
+    where.params.push('Blue')
+    assert.deepEqual(query.build(), ['SELECT * FROM events WHERE id = ? AND color = ?', 1, 'Blue'])
 
   })
 }))

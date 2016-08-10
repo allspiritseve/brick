@@ -1,77 +1,67 @@
 var slice = Array.prototype.slice
+var concat = Array.prototype.concat
 
-var Brick = function(sql) {
-  var params = slice.call(arguments, 1)
-  this.init(sql, params)
-
+var splitAt = function(string, index) {
+  return [string.substr(0, index), string.substr(index + 1)]
 }
 
-Brick.prototype.init = function(sql, params) {
-  var brick
-
-  if (params.length === 1 && Array.isArray(params[0])) {
-    params = params[0]
+var Brick = function() {
+  this.text = []
+  this.params = []
+  var input = slice.call(arguments)
+  if (input) {
+    this.text = concat.apply(this.text, [input.shift()])
+    this.params = concat.apply(this.params, input)
   }
+  console.log('brick', { text: this.text, params: this.params })
+}
 
-  if (Brick.isBrick(sql)) {
-    params = params.concat(sql.params)
-    sql = params.sql
-  } else if (Array.isArray(sql)) {
-    sql = sql.map(function(item) {
-      if (Brick.isBrick(item)) {
-        params = params.concat(item.params)
-        return item.sql
-      } else {
-        return item
-      }
-    }).join(' ')
-  }
+Brick.prototype.build = function() {
+  // Make a copy of params
+  var params = this.params.slice()
 
-  console.log({ sql: sql, params: params })
-
-  var parts = sql.split('?').reduce(function(memo, text, index) {
-    if (text === '') { return memo }
-    memo.text += text
-    var param = params[index]
-    if (Brick.isBrick(param)) {
-      memo.text += param.sql
-      memo.params = memo.params.concat(param.params)
+  // Combine text array into a single string, extracting params from any bricks
+  // that are found.
+  var text = this.text.map(function(item) {
+    if (Brick.isBrick(item)) {
+      item = item.build()
+      params = params.concat(item.slice(1))
+      return item[0]
     } else {
-      memo.text += '?'
-      memo.params.push(param)
+      return item
     }
-    return memo
-  }, { text: [], params: [] })
+  }).join(' ')
 
-  console.log('parts', parts)
+  console.log('brick 2', { text: text, params: params })
 
-  var left = ''
-  var right = sql
-
-  this.params = params.reduce(function(memo, param) {
-    var replacement
+  // Loop through params array, build any bricks that we find, and import
+  // their contents.
+  var left = '', right = text
+  params = params.reduce(function(memo, param) {
+    var placeholder = '?'
     if (Brick.isBrick(param)) {
-      replacement = param.sql
-      memo = memo.concat(param.params)
-    } else {
-      replacement = '?'
-      memo.push(param)
+      param = param.build()
+      placeholder = param[0]
+      param = param.slice(1)
     }
+    memo = memo.concat(param)
     if (right) {
       var index = right.indexOf('?')
-      if (index) {
-        left = left + right.substr(0, index) + replacement
-        right = right.substr(index + 1, right.length)
+      if (index !== -1) {
+        left = left + right.substr(0, index) + placeholder
+        right = right.substr(index + 1)
       }
     }
     return memo
   }, [])
+  text = left + right
 
-  this.sql = left + right
+  // Return results as a single array
+  return [text].concat(params)
 }
 
 Brick.isBrick = function(value) {
-  return typeof value === 'object' && value instanceof Brick
+ return typeof value === 'object' && value instanceof Brick
 }
 
 Brick.join = function(items, separator) {
@@ -222,10 +212,6 @@ var namespace = function(namespace, concatenator) {
 sql.wrap = wrap
 sql.list = list
 sql.namespace = namespace
-
-Brick.prototype.build = function() {
-  return [this.sql].concat(this.params)
-}
 
 Brick.sql = sql
 
