@@ -1,12 +1,13 @@
-var wrap = require('./util/wrap')
 var slice = Array.prototype.slice
 var concat = Array.prototype.concat
 
-var splitAt = function(string, index) {
-  return [string.substr(0, index), string.substr(index + 1)]
-}
-
 var Brick = function() {
+  if (!Brick.isBrick(this)) {
+    var args = slice.call(arguments)
+    var brick = Object.create(Brick.prototype)
+    return Brick.apply(brick, args) || brick
+  }
+
   this.text = []
   this.params = []
   var input = slice.call(arguments)
@@ -14,6 +15,84 @@ var Brick = function() {
     this.text = concat.apply(this.text, [input.shift()])
     this.params = concat.apply(this.params, input)
   }
+}
+
+Brick.isBrick = function(value) {
+ return typeof value === 'object' && value instanceof Brick
+}
+
+Brick.join = function(items, separator) {
+  var params = []
+  separator = separator || ', '
+  var text = items.map(function(item) {
+    if (Brick.isBrick(item)) {
+      return item.merge(params)
+    } else {
+      return item;
+    }
+  }).reduce(function(memo, item) {
+    if (typeof separator === 'function') {
+      return separator(memo, item)
+    } else {
+      return [memo, item].join(separator)
+    }
+  })
+  return new Brick(text, params)
+}
+
+Brick.map = function(object, separator) {
+  return Object.keys(object).map(function(key) {
+    var value = object[key]
+    if (Brick.isBrick(value)) {
+      return value
+    }
+
+    if (typeof separator === 'function') {
+      return separator(key, value)
+    }
+
+    return new Brick([key, separator, '?'], value)
+  })
+}
+
+Brick.where = function(object) {
+  var bricks = Brick.map(object, Brick.fn.equals)
+  return Brick.join(bricks, Brick.fn.and)
+}
+
+Brick.namespace = function(namespace, value) {
+  var fn = function(value) { return Brick.fn.namespace(namespace, value) }
+  if (!value) { return fn }
+  if (typeof value === 'object') {
+    if (Array.isArray(value)) { return value.map(fn) }
+    return Object.keys(value).reduce(function(memo, key) {
+      memo[fn(key)] = value[key]
+      return memo
+    }, {})
+  } else {
+   return fn(value)
+  }
+}
+
+Brick.fn = {}
+
+Brick.fn.equals = function(key, value) {
+  if (value === null) {
+    return new Brick([key, 'IS NULL'])
+  } else {
+    return new Brick([key, '= ?'], value)
+  }
+}
+
+Brick.fn.and = function(key, value) {
+  return new Brick([key, 'AND', value])
+}
+
+Brick.fn.namespace = function() {
+  var parts = slice.call(arguments)
+  return parts.filter(function(part) {
+    return !!part
+  }).join('.')
 }
 
 Brick.prototype.merge = function(params) {
@@ -62,79 +141,6 @@ Brick.prototype.build = function() {
   return [text].concat(params)
 }
 
-Brick.isBrick = function(value) {
- return typeof value === 'object' && value instanceof Brick
-}
-
-Brick.join = function(items, separator) {
-  var params = []
-  separator = separator || ', '
-  var text = items.map(function(item) {
-    if (Brick.isBrick(item)) {
-      return item.merge(params)
-    } else {
-      return item;
-    }
-  }).reduce(function(memo, item) {
-    if (typeof separator === 'function') {
-      return separator(memo, item)
-    } else {
-      return [memo, item].join(separator)
-    }
-  })
-  return new Brick(text, params)
-}
-
-Brick.map = function(object, separator) {
-  return Object.keys(object).map(function(key) {
-    var value = object[key]
-    if (Brick.isBrick(value)) {
-      return value
-    }
-
-    if (typeof separator === 'function') {
-      return separator(key, value)
-    }
-
-    return new Brick([key, separator, '?'], value)
-  })
-}
-
-Brick.where = function(object) {
-  var bricks = Brick.map(object, Brick.fn.equals)
-  return Brick.join(bricks, Brick.fn.and)
-}
-
-Brick.fn = {}
-
-Brick.fn.equals = function(key, value) {
-  if (value === null) {
-    return new Brick([key, 'IS NULL'])
-  } else {
-    return new Brick([key, '= ?'], value)
-  }
-}
-
-Brick.fn.and = function(key, value) {
-  return new Brick([key, 'AND', value])
-}
-
-Brick.fn.namespace = function() {
-  var parts = slice.call(arguments)
-  return parts.filter(function(part) {
-    return !!part
-  }).join('.')
-}
-
-Brick.log = function(brick, name) {
-  return [name, brick].join(': ')
-  // return ['Brick 'text:', JSON.stringify(brick.text) + ',', 'params:', JSON.stringify(brick.params) + ',', 'build:', JSON.stringify(brick.build())].join(' ')
-}
-
-Brick.prototype.log = function(name) {
-  return Brick.log(this, name)
-}
-
 Brick.prototype.toString = function() {
   var string = this.build().map(function(part) {
     return JSON.stringify(part)
@@ -142,83 +148,5 @@ Brick.prototype.toString = function() {
 
   return '[brick ' + string + ']'
 }
-
-Brick.namespace = function(namespace, value) {
-  var fn = function(value) { return Brick.fn.namespace(namespace, value) }
-  if (!value) { return fn }
-  if (typeof value === 'object') {
-    if (Array.isArray(value)) { return value.map(fn) }
-    return Object.keys(value).reduce(function(memo, key) {
-      memo[fn(key)] = value[key]
-      return memo
-    }, {})
-  } else {
-   return fn(value)
-  }
-}
-
-var sql = {}
-
-sql.interpolate = function(exp) {
-  var replacements = slice.call(arguments, 1)
-}
-
-sql.equals = function(exp, value) {
-  return new Brick([exp, '= ?'], value)
-}
-
-
-sql.isNull = function(exp) {
-  return new Brick([exp, 'IS NULL'])
-}
-
-sql.if = function(value, brick, nullBrick) {
-  if (value === null) {
-    return nullBrick
-  } else {
-    return brick
-  }
-}
-
-sql.orNull = function(exp, value) {
-  if (value === null) {
-    return sql.isNull(exp)
-  } else {
-    return sql.equals(exp, value)
-  }
-}
-
-sql.where = function(object) {
-  var bricks = Object.keys(object).reduce(function(memo, key) {
-    var value = object[key]
-    if (value) {
-      memo.push(new Brick([key, '= ?'], value))
-    } else {
-      memo.push(new Brick([key, 'IS NULL']))
-    }
-    return memo
-  },  [])
-  var sql = bricks.map(function(brick) { return brick.text })
-  var params = bricks.reduce(function(memo, brick) { return memo.concat(brick.params) }, [])
-  return new Brick(list(sql, ' AND '), params)
-}
-
-var list = function(items, separator) {
-  if (Array.isArray(items)) {
-    return items.join(separator || ', ');
-  }
-};
-
-var namespace = function(namespace, concatenator) {
-  return function(name) {
-    return [namespace, name].join(concatenator || '.')
-  }
-}
-
-sql.wrap = wrap
-sql.list = list
-sql.namespace = namespace
-
-Brick.sql = sql
 
 module.exports = Brick
