@@ -13,5 +13,8 @@
   },
   "name": "brick",
   "private": true,
+  "scripts": {
+    "test": "./node_modules/.bin/proof test t/*/*.js"
+  },
   "version": "0.0.1"
 }

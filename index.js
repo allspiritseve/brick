@@ -1,3 +1,4 @@
+var wrap = require('./util/wrap')
 var slice = Array.prototype.slice
 var concat = Array.prototype.concat
 
@@ -9,11 +10,16 @@ var Brick = function() {
   this.text = []
   this.params = []
   var input = slice.call(arguments)
-  if (input) {
+  if (input.length) {
     this.text = concat.apply(this.text, [input.shift()])
     this.params = concat.apply(this.params, input)
   }
-  console.log('brick', { text: this.text, params: this.params })
+}
+
+Brick.prototype.merge = function(params) {
+  var sql = this.build()
+  sql.slice(1).forEach(function(param) { params.push(param) })
+  return sql[0]
 }
 
 Brick.prototype.build = function() {
@@ -24,15 +30,11 @@ Brick.prototype.build = function() {
   // that are found.
   var text = this.text.map(function(item) {
     if (Brick.isBrick(item)) {
-      item = item.build()
-      params = params.concat(item.slice(1))
-      return item[0]
+      return item.merge(params)
     } else {
       return item
     }
   }).join(' ')
-
-  console.log('brick 2', { text: text, params: params })
 
   // Loop through params array, build any bricks that we find, and import
   // their contents.
@@ -67,10 +69,9 @@ Brick.isBrick = function(value) {
 Brick.join = function(items, separator) {
   var params = []
   separator = separator || ', '
-  var sql = items.map(function(item) {
+  var text = items.map(function(item) {
     if (Brick.isBrick(item)) {
-      params = params.concat(item.params)
-      return item.sql;
+      return item.merge(params)
     } else {
       return item;
     }
@@ -81,7 +82,7 @@ Brick.join = function(items, separator) {
       return [memo, item].join(separator)
     }
   })
-  return new Brick(sql, params)
+  return new Brick(text, params)
 }
 
 Brick.map = function(object, separator) {
@@ -125,12 +126,21 @@ Brick.fn.namespace = function() {
   }).join('.')
 }
 
-Brick.log = function(brick) {
-  console.log('Brick', JSON.stringify({ sql: brick.sql, params: brick.params }, null, '  '))
+Brick.log = function(brick, name) {
+  return [name, brick].join(': ')
+  // return ['Brick 'text:', JSON.stringify(brick.text) + ',', 'params:', JSON.stringify(brick.params) + ',', 'build:', JSON.stringify(brick.build())].join(' ')
 }
 
-Brick.prototype.log = function() {
-  Brick.log(this)
+Brick.prototype.log = function(name) {
+  return Brick.log(this, name)
+}
+
+Brick.prototype.toString = function() {
+  var string = this.build().map(function(part) {
+    return JSON.stringify(part)
+  }).join(', ')
+
+  return '[brick ' + string + ']'
 }
 
 Brick.namespace = function(namespace, value) {
@@ -188,14 +198,10 @@ sql.where = function(object) {
     }
     return memo
   },  [])
-  var sql = bricks.map(function(brick) { return brick.sql })
+  var sql = bricks.map(function(brick) { return brick.text })
   var params = bricks.reduce(function(memo, brick) { return memo.concat(brick.params) }, [])
   return new Brick(list(sql, ' AND '), params)
 }
-
-var wrap = function(item, wrapper) {
-  return [wrapper[0], item, wrapper[1]].join('')
-};
 
 var list = function(items, separator) {
   if (Array.isArray(items)) {
