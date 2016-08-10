@@ -14,15 +14,36 @@ Brick.prototype.init = function(sql, params) {
   }
 
   if (Brick.isBrick(sql)) {
-    brick = sql
+    params = params.concat(sql.params)
+    sql = params.sql
   } else if (Array.isArray(sql)) {
-    brick = Brick.join(sql, ' ')
+    sql = sql.map(function(item) {
+      if (Brick.isBrick(item)) {
+        params = params.concat(item.params)
+        return item.sql
+      } else {
+        return item
+      }
+    }).join(' ')
   }
 
-  if (brick) {
-    sql = brick.sql
-    params = params.concat(brick.params)
-  }
+  console.log({ sql: sql, params: params })
+
+  var parts = sql.split('?').reduce(function(memo, text, index) {
+    if (text === '') { return memo }
+    memo.text += text
+    var param = params[index]
+    if (Brick.isBrick(param)) {
+      memo.text += param.sql
+      memo.params = memo.params.concat(param.params)
+    } else {
+      memo.text += '?'
+      memo.params.push(param)
+    }
+    return memo
+  }, { text: [], params: [] })
+
+  console.log('parts', parts)
 
   var left = ''
   var right = sql

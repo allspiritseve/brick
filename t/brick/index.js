@@ -4,7 +4,7 @@ var Brick = require('../..')
 var sql = Brick.sql
 var slice = Array.prototype.slice
 
-proof(6, cadence(function(async, assert) {
+proof(7, cadence(function(async, assert) {
   assert.brick = function(brick, sql) {
     var params = slice.call(arguments, 2)
     assert.deepEqual(brick.build(), [sql].concat(params))
@@ -50,6 +50,11 @@ proof(6, cadence(function(async, assert) {
     var table = Brick.namespace('events', { id: 3 })
     var where = Brick.where(table)
     assert.brick(where, 'events.id = ?', 3)
+
+  }, function() {
+
+  var query = new Brick(['id = ? AND', new Brick('color = ?', 'Blue')], '3')
+  assert.deepEqual(query.build(), ['id = ? AND color = ?', 'Blue', '3'])
 
   })
 }))
