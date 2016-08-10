@@ -1,18 +1,21 @@
 {
   "author": "Cory Kaufman-Schofield <cory@corykaufman.com>",
-  "dependencies": {
-    "abend": "0.0.3",
-    "arguable": "0.0.40",
-    "cadence": "0.4.3",
-    "proof": "0.0.51",
-    "stack-trace": "0.0.9"
+  "dependencies": {},
+  "description": "Brick is a simple SQL builder",
+  "devDependencies": {
+    "cadence": "1.0.x",
+    "proof": "1.0.x"
   },
-  "description": "Brick SQL Builder",
   "engines": {
     "node": "5.2.0"
   },
+  "homepage": "https://github.com/allspiritseve/brick",
+  "license": "MIT",
   "name": "brick",
-  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/allspiritseve/brick.git"
+  },
   "scripts": {
     "test": "./node_modules/.bin/proof test t/*/*.js"
   },
