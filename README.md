@@ -1,4 +1,4 @@
-# Brick
+# Brickmason
 
 Build SQL strings without attempting to abstract away SQL.
 
@@ -6,7 +6,7 @@ Build SQL strings without attempting to abstract away SQL.
 
 ```javascript
 // Simple brick
-var brick = require('brick')
+var brick = require('brickmason')
 var id = 1
 var query = brick('SELECT * FROM events WHERE id = ?', id)
 query.build() // => ['SELECT * FROM events WHERE id = ?', 1 ]

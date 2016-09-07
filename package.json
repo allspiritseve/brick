@@ -1,7 +1,7 @@
 {
   "author": "Cory Kaufman-Schofield <cory@corykaufman.com>",
   "dependencies": {},
-  "description": "Brick is a simple SQL builder",
+  "description": "Brickmason is a simple SQL builder",
   "devDependencies": {
     "cadence": "1.0.x",
     "proof": "1.0.x"
@@ -9,12 +9,12 @@
   "engines": {
     "node": "5.2.0"
   },
-  "homepage": "https://github.com/allspiritseve/brick",
+  "homepage": "https://github.com/allspiritseve/brickmason",
   "license": "MIT",
-  "name": "brick",
+  "name": "brickmason",
   "repository": {
     "type": "git",
-    "url": "git://github.com/allspiritseve/brick.git"
+    "url": "git://github.com/allspiritseve/brickmason.git"
   },
   "scripts": {
     "test": "./node_modules/.bin/proof test t/*/*.js"
