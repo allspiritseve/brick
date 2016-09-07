@@ -29,6 +29,7 @@ query.build() // => ['SELECT * FROM events WHERE id = ?', 1 ]
 
 ### Compose bricks with other bricks
 ```javascript
+var brick = require('brickmason')
 var conditions = []
 conditions.push(brick('category = ?', 'Blues'))
 var query = brick('SELECT * FROM events WHERE ?', brick('category = ?', 'Blues'))
@@ -37,6 +38,7 @@ query.build() // => ['SELECT * FROM events WHERE category = ?', 'Blues']
 
 ### Write subqueries
 ```javascript
+var brick = require('brickmason')
 var cities = brick('SELECT id FROM cities WHERE name = ?', 'Ann Arbor')
 var query = brick('SELECT * FROM events WHERE city_id in (?)', cities)
 query.build() // => ['SELECT * FROM events WHERE city_id in (SELECT id FROM cities WHERE name = ?)', 'Ann Arbor']
@@ -44,6 +46,7 @@ query.build() // => ['SELECT * FROM events WHERE city_id in (SELECT id FROM citi
 
 ### Join bricks
 ```javascript
+var brick = require('brickmason')
 var columns = []
 columns.push(brick('id as event_id'))
 columns.push('headline')
