@@ -17,8 +17,8 @@ var Brick = function() {
   }
 }
 
-Brick.isBrick = function(value) {
- return typeof value === 'object' && value instanceof Brick
+Brick.isBrick = function(brick) {
+ return typeof brick === 'object' && brick instanceof Brick
 }
 
 Brick.join = function(items, separator) {
@@ -115,9 +115,10 @@ Brick.prototype.build = function() {
     }
   }).join(' ')
 
+  var left = '', right = text
+
   // Loop through params array, build any bricks that we find, and import
   // their contents.
-  var left = '', right = text
   params = params.reduce(function(memo, param) {
     var placeholder = '?'
     if (Brick.isBrick(param)) {
@@ -135,10 +136,20 @@ Brick.prototype.build = function() {
     }
     return memo
   }, [])
+
   text = left + right
 
-  // Return results as a single array
-  return [text].concat(params)
+  // Replace parameter placeholders with $1, $2, etc.
+  text = params.reduce(function(memo, param, index) {
+    var placeholder = '$' + (index + 1)
+    return memo.replace('?', placeholder)
+  }, text)
+
+  // Return result as an object
+  return {
+    text: text,
+    params: params
+  }
 }
 
 Brick.prototype.toString = function() {

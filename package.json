@@ -1,13 +1,14 @@
 {
   "author": "Cory Kaufman-Schofield <cory@corykaufman.com>",
   "dependencies": {},
-  "description": "Brickmason is a simple SQL builder",
+  "description": "SQL query builder for Node.js",
   "devDependencies": {
     "cadence": "1.0.x",
-    "proof": "1.0.x"
+    "proof": "1.0.x",
+    "pg": "latest"
   },
   "engines": {
-    "node": "5.2.0"
+    "node": "4.2.3"
   },
   "homepage": "https://github.com/allspiritseve/brickmason",
   "license": "MIT",
