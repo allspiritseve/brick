@@ -26,7 +26,9 @@ Brick.join = function(items, separator) {
   separator = separator || ', '
   var text = items.map(function(item) {
     if (Brick.isBrick(item)) {
-      return item.merge(params)
+      var result = item._build()
+      params = params.concat(result.params)
+      return result.text
     } else {
       return item;
     }
@@ -95,13 +97,7 @@ Brick.fn.namespace = function() {
   }).join('.')
 }
 
-Brick.prototype.merge = function(params) {
-  var sql = this.build()
-  sql.slice(1).forEach(function(param) { params.push(param) })
-  return sql[0]
-}
-
-Brick.prototype.build = function() {
+Brick.prototype._build = function() {
   // Make a copy of params
   var params = this.params.slice()
 
@@ -109,7 +105,9 @@ Brick.prototype.build = function() {
   // that are found.
   var text = this.text.map(function(item) {
     if (Brick.isBrick(item)) {
-      return item.merge(params)
+      var result = item._build()
+      params = params.concat(result.params)
+      return result.text
     } else {
       return item
     }
@@ -122,9 +120,9 @@ Brick.prototype.build = function() {
   params = params.reduce(function(memo, param) {
     var placeholder = '?'
     if (Brick.isBrick(param)) {
-      param = param.build()
-      placeholder = param[0]
-      param = param.slice(1)
+      var result = param.build()
+      placeholder = result.text
+      param = result.params
     }
     memo = memo.concat(param)
     if (right) {
@@ -139,17 +137,22 @@ Brick.prototype.build = function() {
 
   text = left + right
 
-  // Replace parameter placeholders with $1, $2, etc.
-  text = params.reduce(function(memo, param, index) {
-    var placeholder = '$' + (index + 1)
-    return memo.replace('?', placeholder)
-  }, text)
-
-  // Return result as an object
   return {
     text: text,
     params: params
   }
+}
+
+Brick.prototype.build = function() {
+  var result = this._build()
+
+  // Replace parameter placeholders with $1, $2, etc.
+  result.text = result.params.reduce(function(memo, param, index) {
+    var placeholder = '$' + (index + 1)
+    return memo.replace('?', placeholder)
+  }, result.text)
+
+  return result
 }
 
 Brick.prototype.toString = function() {
