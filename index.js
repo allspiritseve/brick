@@ -2,19 +2,23 @@ var slice = Array.prototype.slice
 var concat = Array.prototype.concat
 
 var Brick = function() {
+  var args = slice.call(arguments)
+
   if (!Brick.isBrick(this)) {
-    var args = slice.call(arguments)
     var brick = Object.create(Brick.prototype)
     return Brick.apply(brick, args) || brick
   }
 
   this.text = []
   this.params = []
-  var input = slice.call(arguments)
-  if (input.length) {
-    this.text = concat.apply(this.text, [input.shift()])
-    this.params = concat.apply(this.params, input)
+  if (args.length) {
+    this.text = concat.apply([], [args.shift()])
+    this.params = concat.apply([], args)
   }
+}
+
+Brick.defaults = {
+  builder: null
 }
 
 Brick.isBrick = function(brick) {
@@ -42,9 +46,20 @@ Brick.join = function(items, separator) {
   return new Brick(text, params)
 }
 
+Brick.join2 = function(items, separator) {
+  return new Brick(items.reduce(function(memo, item) {
+    if (Array.isArray(memo)) {
+      return memo.concat(separator, item)
+    } else {
+      return [memo, separator, item]
+    }
+  }))
+}
+
 Brick.map = function(object, separator) {
   return Object.keys(object).map(function(key) {
     var value = object[key]
+
     if (Brick.isBrick(value)) {
       return value
     }
@@ -60,6 +75,12 @@ Brick.map = function(object, separator) {
 Brick.where = function(object) {
   var bricks = Brick.map(object, Brick.fn.equals)
   return Brick.join(bricks, Brick.fn.and)
+}
+
+Brick.conditions = function(object) {
+  return Brick.join2(Object.keys(object).map(function(key) {
+    return Brick.fn.equals(key, object[key])
+  }), 'AND')
 }
 
 Brick.namespace = function(namespace, value) {
@@ -90,11 +111,42 @@ Brick.fn.and = function(key, value) {
   return new Brick([key, 'AND', value])
 }
 
+Brick.fn.or = function(key, value) {
+  return new Brick([key, 'OR', value])
+}
+
+Brick.fn.wrap = function(item) {
+  return new Brick('(?)', item)
+}
+
+Brick.array = {}
+
+Brick.array.map = function(array, fn) {
+  return array.map(fn)
+}
+
 Brick.fn.namespace = function() {
   var parts = slice.call(arguments)
   return parts.filter(function(part) {
     return !!part
   }).join('.')
+}
+
+Brick.builders = {}
+
+Brick.builders.pg = function(query) {
+  var params = query.params
+
+  // Replace parameter placeholders with $1, $2, etc.
+  var text = params.reduce(function(memo, param, index) {
+    var placeholder = '$' + (index + 1)
+    return memo.replace('?', placeholder)
+  }, query.text)
+
+  return {
+    text: text,
+    values: params
+  }
 }
 
 Brick.prototype._build = function() {
@@ -143,16 +195,14 @@ Brick.prototype._build = function() {
   }
 }
 
-Brick.prototype.build = function() {
+Brick.prototype.build = function(builder) {
+  builder = builder || Brick.defaults.builder
   var result = this._build()
-
-  // Replace parameter placeholders with $1, $2, etc.
-  result.text = result.params.reduce(function(memo, param, index) {
-    var placeholder = '$' + (index + 1)
-    return memo.replace('?', placeholder)
-  }, result.text)
-
-  return result
+  if (typeof Brick.builders[builder] === 'function') {
+    return Brick.builders[builder](result)
+  } else {
+    return result
+  }
 }
 
 Brick.prototype.toString = function() {

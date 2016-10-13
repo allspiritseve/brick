@@ -9,7 +9,7 @@ var helpers = function(assert) {
   }
 }
 
-proof(8, cadence(function(async, assert) {
+proof(9, cadence(function(async, assert) {
   helpers(assert)
 
   async(function() {
@@ -63,6 +63,11 @@ proof(8, cadence(function(async, assert) {
     where.text.push('AND', 'color = ?')
     where.params.push('Blue')
     assert.brick(query, { text: 'SELECT * FROM events WHERE id = $1 AND color = $2', params: [1, 'Blue'] }, 'lazy build 2')
+
+  }, function() {
+
+    var brick1 = brick.fn.wrap(brick([brick('id = ?', 1), 'AND', brick('name = ?', 'Cory')]))
+    assert.brick(brick1, { text: '(id = ? AND name = ?)', params: [1, 'Cory'] }, 'nested bricks')
 
   })
 }))
