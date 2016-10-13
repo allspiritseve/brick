@@ -57,17 +57,12 @@ Brick.map = function(object, separator) {
 
 Brick.where = function(object) {
   var bricks = Brick.map(object, Brick.fn.equals)
-  return Brick.join(bricks, Brick.fn.and)
+  return Brick.join(bricks, 'AND')
 }
 
 Brick.conditions = function(object) {
   return Brick.join(Object.keys(object).map(function(key) {
-    var value = object[key]
-    if (Brick.isBrick(value)) {
-      return value
-    } else {
-      return Brick.fn.equals(key, value)
-    }
+    return Brick.fn.equals(key, object[key])
   }), 'AND')
 }
 
@@ -85,15 +80,32 @@ Brick.namespace = function(namespace, value) {
   }
 }
 
+Brick.equal = function() {
+  return slice.call(arguments).map(function(brick) {
+    return brick.build()
+  }).reduce(function(a, b) {
+    return JSON.stringify(a) === JSON.stringify(b)
+  })
+}
+
 Brick.fn = {}
 
-Brick.fn.equals = function(key, value) {
-  if (value === null) {
-    return new Brick([key, 'IS NULL'])
-  } else {
-    return new Brick([key, '= ?'], value)
+Brick.fn.operator = function(operator, key, value) {
+  var fn = function(key, value) {
+    if (value === null) {
+      return new Brick([key, 'IS NULL'])
+    } else if (Brick.isBrick(value)) {
+      return value
+    } else {
+      return new Brick([key, operator, '?'], value)
+    }
   }
+  var args = slice.call(arguments, 1)
+  if (!args.length) { return fn }
+  return fn.apply(null, args)
 }
+
+Brick.fn.equals = Brick.fn.operator('=')
 
 Brick.fn.and = function(key, value) {
   return new Brick([key, 'AND', value])
@@ -107,6 +119,15 @@ Brick.fn.wrap = function(item) {
   return new Brick('(?)', item)
 }
 
+Brick.fn.join = function(separator, key, value) {
+  var join = function(items) {
+    return Brick.join(items, separator)
+  }
+  var items = slice.call(arguments, 1)
+  if (!items.length) { return join }
+  return join(items)
+}
+
 Brick.fn.namespace = function() {
   var parts = slice.call(arguments)
   return parts.filter(function(part) {
@@ -117,10 +138,15 @@ Brick.fn.namespace = function() {
 Brick.builders = {}
 
 Brick.builders.pg = function(query) {
-  var params = query.params
+  var params = []
 
   // Replace parameter placeholders with $1, $2, etc.
-  var text = params.reduce(function(memo, param, index) {
+  var text = query.params.reduce(function(memo, param) {
+    var index = params.indexOf(param)
+    if (index === -1) {
+      index = params.length
+      params.push(param);
+    }
     var placeholder = '$' + (index + 1)
     return memo.replace('?', placeholder)
   }, query.text)
@@ -145,7 +171,7 @@ Brick.prototype._build = function() {
   params = params.reduce(function(memo, param) {
     var placeholder = '?'
     if (Brick.isBrick(param)) {
-      var result = param.build()
+      var result = param._build()
       placeholder = result.text
       param = result.params
     }
@@ -179,7 +205,8 @@ Brick.prototype.build = function(builder) {
 }
 
 Brick.prototype.toString = function() {
-  var string = this.build().map(function(part) {
+  var brick = this._build();
+  var string = [brick.text].concat(brick.params).map(function(part) {
     return JSON.stringify(part)
   }).join(', ')
 

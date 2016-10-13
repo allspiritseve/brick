@@ -5,11 +5,12 @@ var slice = Array.prototype.slice
 
 var helpers = function(assert) {
   assert.brick = function(query, expected, message) {
+    if (brick.isBrick(expected)) { expected = expected.build() }
     assert.deepEqual(query.build(), expected, message)
   }
 }
 
-proof(9, cadence(function(async, assert) {
+proof(12, cadence(function(async, assert) {
   helpers(assert)
 
   async(function() {
@@ -66,8 +67,14 @@ proof(9, cadence(function(async, assert) {
 
   }, function() {
 
-    var brick1 = brick.fn.wrap(brick([brick('id = ?', 1), 'AND', brick('name = ?', 'Cory')]))
-    assert.brick(brick1, { text: '(id = ? AND name = ?)', params: [1, 'Cory'] }, 'nested bricks')
+    var query = brick('(?)', brick([brick('id = ?', 1), 'AND', brick('name = ?', 'Cory')]))
+    assert.brick(query, brick('(id = ? AND name = ?)', 1, 'Cory'), 'nested bricks')
+
+  }, function() {
+
+    assert.brick(brick.conditions({ color: 'Red' }), brick('color = ?', 'Red'), 'condition with value')
+    assert.brick(brick.conditions({ color: null }), brick('color IS NULL'), 'condition with null value')
+    assert.brick(brick.conditions({ count: brick('count > 3') }), brick('count > 3'), 'condition with brick value')
 
   })
 }))
