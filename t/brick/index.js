@@ -15,26 +15,26 @@ proof(9, cadence(function(async, assert) {
   async(function() {
 
     var query = brick('SELECT * FROM events WHERE id = ?', 1)
-    assert.brick(query, { text: 'SELECT * FROM events WHERE id = $1', params: [1] }, 'simple brick')
+    assert.brick(query, { text: 'SELECT * FROM events WHERE id = ?', params: [1] }, 'simple brick')
 
   }, function() {
 
     var query = brick(['SELECT *', 'FROM events', 'WHERE id = ?'], 1)
-    assert.brick(query, { text: 'SELECT * FROM events WHERE id = $1', params: [1] }, 'text array')
+    assert.brick(query, { text: 'SELECT * FROM events WHERE id = ?', params: [1] }, 'text array')
 
   }, function() {
 
     var conditions = []
     conditions.push(brick('id = ?', 1))
     conditions.push(brick('category = ?', 'approved'))
-    var query = brick.join(conditions, ' AND ')
-    assert.brick(query, { text: 'id = $1 AND category = $2', params: [1, 'approved'] }, 'join conditions')
+    var query = brick.join(conditions, 'AND')
+    assert.brick(query, { text: 'id = ? AND category = ?', params: [1, 'approved'] }, 'join conditions')
 
   }, function() {
 
     var categories = brick('SELECT event_id FROM categories WHERE category = ?', 'blue')
     var events = brick('SELECT * FROM events WHERE id IN (?)', categories)
-    assert.brick(events, { text: 'SELECT * FROM events WHERE id IN (SELECT event_id FROM categories WHERE category = $1)', params: ['blue'] }, 'subquery')
+    assert.brick(events, { text: 'SELECT * FROM events WHERE id IN (SELECT event_id FROM categories WHERE category = ?)', params: ['blue'] }, 'subquery')
 
   }, function() {
 
@@ -43,15 +43,15 @@ proof(9, cadence(function(async, assert) {
     conditions.color = 'blue'
     conditions.city = brick('city IS NULL')
     conditions.test = brick('count > ?', 4)
-    var where = brick.where(conditions)
+    var where = brick.conditions(conditions)
     var query = brick('SELECT * FROM events WHERE ?', where)
-    assert.brick(query, { text: 'SELECT * FROM events WHERE id = $1 AND color = $2 AND city IS NULL AND count > $3', params: ['3', 'blue', 4] }, 'conditions')
+    assert.brick(query, { text: 'SELECT * FROM events WHERE id = ? AND color = ? AND city IS NULL AND count > ?', params: ['3', 'blue', 4] }, 'conditions')
 
   }, function() {
 
     var table = brick.namespace('events', { id: 3 })
     var where = brick.where(table)
-    assert.brick(where, { text: 'events.id = $1', params: [3] }, 'namespace')
+    assert.brick(where, { text: 'events.id = ?', params: [3] }, 'namespace')
 
   }, function() {
 
@@ -59,10 +59,10 @@ proof(9, cadence(function(async, assert) {
     var query = brick('SELECT * FROM events WHERE ?', where)
     where.text.push('id = ?')
     where.params.push(1)
-    assert.brick(query, { text: 'SELECT * FROM events WHERE id = $1', params: [1] }, 'lazy build 1')
+    assert.brick(query, { text: 'SELECT * FROM events WHERE id = ?', params: [1] }, 'lazy build 1')
     where.text.push('AND', 'color = ?')
     where.params.push('Blue')
-    assert.brick(query, { text: 'SELECT * FROM events WHERE id = $1 AND color = $2', params: [1, 'Blue'] }, 'lazy build 2')
+    assert.brick(query, { text: 'SELECT * FROM events WHERE id = ? AND color = ?', params: [1, 'Blue'] }, 'lazy build 2')
 
   }, function() {
 

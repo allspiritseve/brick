@@ -9,12 +9,20 @@ var Brick = function() {
     return Brick.apply(brick, args) || brick
   }
 
-  this.text = []
-  this.params = []
-  if (args.length) {
-    this.text = concat.apply([], [args.shift()])
-    this.params = concat.apply([], args)
-  }
+  var text = []
+  if (args.length) { text = text.concat(args[0]) }
+  var params = args.slice(1)
+
+  this.text = text.reduce(function(memo, item) {
+    if (Brick.isBrick(item)) {
+      params = params.concat(item.params)
+      return memo.concat(item.text)
+    } else {
+      return memo.concat(item)
+    }
+  }, [])
+
+  this.params = params
 }
 
 Brick.defaults = {
@@ -26,34 +34,9 @@ Brick.isBrick = function(brick) {
 }
 
 Brick.join = function(items, separator) {
-  var params = []
-  separator = separator || ', '
-  var text = items.map(function(item) {
-    if (Brick.isBrick(item)) {
-      var result = item._build()
-      params = params.concat(result.params)
-      return result.text
-    } else {
-      return item;
-    }
-  }).reduce(function(memo, item) {
-    if (typeof separator === 'function') {
-      return separator(memo, item)
-    } else {
-      return [memo, item].join(separator)
-    }
-  })
-  return new Brick(text, params)
-}
-
-Brick.join2 = function(items, separator) {
-  return new Brick(items.reduce(function(memo, item) {
-    if (Array.isArray(memo)) {
-      return memo.concat(separator, item)
-    } else {
-      return [memo, separator, item]
-    }
-  }))
+  return new Brick(items.reduce(function(memo, item, index) {
+    return memo.concat(index ? [separator, item] : item)
+  }, []))
 }
 
 Brick.map = function(object, separator) {
@@ -78,8 +61,13 @@ Brick.where = function(object) {
 }
 
 Brick.conditions = function(object) {
-  return Brick.join2(Object.keys(object).map(function(key) {
-    return Brick.fn.equals(key, object[key])
+  return Brick.join(Object.keys(object).map(function(key) {
+    var value = object[key]
+    if (Brick.isBrick(value)) {
+      return value
+    } else {
+      return Brick.fn.equals(key, value)
+    }
   }), 'AND')
 }
 
@@ -119,12 +107,6 @@ Brick.fn.wrap = function(item) {
   return new Brick('(?)', item)
 }
 
-Brick.array = {}
-
-Brick.array.map = function(array, fn) {
-  return array.map(fn)
-}
-
 Brick.fn.namespace = function() {
   var parts = slice.call(arguments)
   return parts.filter(function(part) {
@@ -153,17 +135,8 @@ Brick.prototype._build = function() {
   // Make a copy of params
   var params = this.params.slice()
 
-  // Combine text array into a single string, extracting params from any bricks
-  // that are found.
-  var text = this.text.map(function(item) {
-    if (Brick.isBrick(item)) {
-      var result = item._build()
-      params = params.concat(result.params)
-      return result.text
-    } else {
-      return item
-    }
-  }).join(' ')
+  // Join text array into a single string
+  var text = this.text.join(' ')
 
   var left = '', right = text
 
