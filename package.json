@@ -7,9 +7,6 @@
     "proof": "1.0.x",
     "pg": "latest"
   },
-  "engines": {
-    "node": "4.2.3"
-  },
   "homepage": "https://github.com/allspiritseve/brickmason",
   "license": "MIT",
   "name": "brickmason",
