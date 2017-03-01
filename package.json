@@ -7,15 +7,15 @@
     "proof": "1.0.x",
     "pg": "latest"
   },
-  "homepage": "https://github.com/allspiritseve/brickmason",
+  "homepage": "https://github.com/allspiritseve/brick",
   "license": "MIT",
-  "name": "brickmason",
+  "name": "brick",
   "repository": {
     "type": "git",
-    "url": "git://github.com/allspiritseve/brickmason.git"
+    "url": "git://github.com/allspiritseve/brick.git"
   },
   "scripts": {
     "test": "./node_modules/.bin/proof test t/*/*.js"
   },
-  "version": "0.0.5"
+  "version": "2.0.0"
 }

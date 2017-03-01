@@ -1,4 +1,4 @@
-# Brickmason
+# Brick
 
 Build SQL strings without attempting to abstract away SQL.
 
@@ -6,7 +6,7 @@ Build SQL strings without attempting to abstract away SQL.
 
 Writing raw SQL is fun, but there are occasional pain points, such as
 conditionally appending expressions or converting an object into a WHERE
-clause. Brickmason makes those things easier, but otherwise gets out of
+clause. Brick makes those things easier, but otherwise gets out of
 your way.
 
 A brick in its simplest form is an array of SQL strings and an array of parameters.
@@ -23,7 +23,7 @@ built.
 
 ### Simple brick
 ```javascript
-var brick = require('brickmason')
+var brick = require('brick')
 var id = 1
 var query = brick('SELECT * FROM events WHERE id = ?', id)
 query.build() // => { text: 'SELECT * FROM events WHERE id = $1', params: [1] }
@@ -31,7 +31,7 @@ query.build() // => { text: 'SELECT * FROM events WHERE id = $1', params: [1] }
 
 ### Compose bricks with other bricks
 ```javascript
-var brick = require('brickmason')
+var brick = require('brick')
 var conditions = []
 conditions.push(brick('category = ?', 'Blues'))
 var query = brick('SELECT * FROM events WHERE ?', brick('category = ?', 'Blues'))
@@ -40,7 +40,7 @@ query.build() // => { text: 'SELECT * FROM events WHERE category = $1', params: 
 
 ### Write subqueries
 ```javascript
-var brick = require('brickmason')
+var brick = require('brick')
 var cities = brick('SELECT id FROM cities WHERE name = ?', 'Ann Arbor')
 var query = brick('SELECT * FROM events WHERE city_id in (?)', cities)
 query.build() // => { text: 'SELECT * FROM events WHERE city_id in (SELECT id FROM cities WHERE name = $1)', params: ['Ann Arbor'] }
@@ -48,7 +48,7 @@ query.build() // => { text: 'SELECT * FROM events WHERE city_id in (SELECT id FR
 
 ### Join bricks
 ```javascript
-var brick = require('brickmason')
+var brick = require('brick')
 var columns = []
 columns.push(brick('id as event_id'))
 columns.push('headline')
@@ -59,7 +59,7 @@ query.build() // => { text: 'SELECT id as event_id, headline, city_id FROM event
 
 ### Conditions
 ```javascript
-var brick = require('brickmason')
+var brick = require('brick')
 var where = brick.conditions({
   city: 'Ann Arbor',
   category: 'Jazz',
@@ -71,7 +71,7 @@ query.build() // => { text: 'SELECT * FROM events WHERE city = ? AND category = 
 
 ### Complex conditions
 ```javascript
-var brick = require('brickmason')
+var brick = require('brick')
 var searches = [
   { generic_type: 128, specific_type: 256 },
   { generic_type: 128, specific_type: null },
@@ -87,10 +87,10 @@ var query = brick('SELECT * FROM devices WHERE ?', where)
 query.build() // => { text: 'SELECT * FROM devices WHERE (generic_type = ? AND specific_type = ?) OR (generic_type = ? AND specific_type IS NULL)', params: ['128', '256'] }
 ```
 
-## Using Brickmason with Postgresql
+## Using Brick with Postgresql
 ```javascript
 var pg = require('pg')
-var brick = require('brickmason')
+var brick = require('brick')
 
 var query = brick(/* ... */)
 
